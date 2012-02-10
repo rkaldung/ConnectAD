@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <otrs_package version="1.0">
-    <Name>ActiveDirectoryAuth</Name>
+    <Name>ConnectAD</Name>
     <Version>0.2.3</Version>
     <Framework>3.0.x</Framework>
     <Vendor>Roy Kaldung &lt;roy@kaldung.com&gt;</Vendor>
