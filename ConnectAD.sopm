@@ -9,16 +9,16 @@
     <ChangeLog Version="0.1" Date="2011-10-15 20:00:00">initial release</ChangeLog>
     <ChangeLog Version="0.2" Date="2012-01-05 19:05:00">added parameter for Kerberos/Formbased login</ChangeLog>
     <ChangeLog Version="0.2.1" Date="2012-01-05 19:05:00">added config documentation</ChangeLog>
-    <Description Lang="en">Sync and authenticate agents against an Active Directory, regarding AGDLP (nested groups).</Description>
+    <Description Lang="en">Sync and authenticate against an Active Directory, regarding AGDLP (nested groups).</Description>
     <IntroInstall Type="post" Lang="en" Title="Configuration needed!">Details on configuration can be found in doc/en/syncad</IntroInstall>
     <BuildDate>?</BuildDate>
     <BuildHost>?</BuildHost>
     <Filelist>
         <!-- <File Permission="644" Location="Kernel/System/Auth/Kerberos.pm"></File> -->
-        <File Permission="644" Location="doc/en/ActiveDirectoryAuth.pdf"></File>
-        <File Permission="644" Location="doc/de/ActiveDirectoryAuth.pdf"></File>
-        <File Permission="644" Location="Kernel/System/Auth/Sync/AD.pm"></File>
-        <File Permission="644" Location="Kernel/System/Auth/AD.pm"></File>
-        <!-- <File Permission="644" Location="Kernel/System/CustomerUser/AD.pm"></File> -->
+        <File Permission="644" Location="doc/en/ConnectAD.pdf"></File>
+        <File Permission="644" Location="Kernel/System/Auth/Sync/ConnectAD.pm"></File>
+        <File Permission="644" Location="Kernel/System/Auth/ConnectAD.pm"></File>
+        <File Permission="644" Location="Kernel/System/CustomerUser/ConnectAD.pm"></File>
+        <File Permission="644" Location="Kernel/System/CustomerAuth/ConnectAD.pm"></File>
     </Filelist>
 </otrs_package>

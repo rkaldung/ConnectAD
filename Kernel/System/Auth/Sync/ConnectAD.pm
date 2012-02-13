@@ -12,7 +12,7 @@
 # did not receive this file, see http://www.gnu.org/licenses/agpl.txt.
 # --
 
-package Kernel::System::Auth::Sync::AD;
+package Kernel::System::Auth::Sync::ConnectAD;
 
 use strict;
 use warnings;
@@ -39,62 +39,62 @@ sub new {
 
     # get ldap preferences
     $Self->{Count} = $Param{Count} || '';
-    $Self->{Die} = $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::Die' . $Param{Count} );
-    if ( $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::Host' . $Param{Count} ) ) {
-        $Self->{Host} = $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::Host' . $Param{Count} );
+    $Self->{Die} = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::Die' . $Param{Count} );
+    if ( $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::Host' . $Param{Count} ) ) {
+        $Self->{Host} = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::Host' . $Param{Count} );
     }
     else {
         $Self->{LogObject}->Log(
             Priority => 'error',
-            Message  => "Need AuthSyncModule::AD::Host$Param{Count} in Kernel/Config.pm",
+            Message  => "Need AuthSyncModule::ConnectAD::Host$Param{Count} in Kernel/Config.pm",
         );
         return;
     }
-    if ( defined( $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::BaseDN' . $Param{Count} ) ) ) {
+    if ( defined( $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::BaseDN' . $Param{Count} ) ) ) {
         $Self->{BaseDN}
-            = $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::BaseDN' . $Param{Count} );
+            = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::BaseDN' . $Param{Count} );
     }
     else {
         $Self->{LogObject}->Log(
             Priority => 'error',
-            Message  => "Need AuthSyncModule::AD::BaseDN$Param{Count} in Kernel/Config.pm",
+            Message  => "Need AuthSyncModule::ConnectAD::BaseDN$Param{Count} in Kernel/Config.pm",
         );
         return;
     }
-    if ( $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::UID' . $Param{Count} ) ) {
-        $Self->{UID} = $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::UID' . $Param{Count} );
+    if ( $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::UID' . $Param{Count} ) ) {
+        $Self->{UID} = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::UID' . $Param{Count} );
     }
     else {
         $Self->{LogObject}->Log(
             Priority => 'error',
-            Message  => "Need AuthSyncModule::AD::UID$Param{Count} in Kernel/Config.pm",
+            Message  => "Need AuthSyncModule::ConnectAD::UID$Param{Count} in Kernel/Config.pm",
         );
         return;
     }
     $Self->{SearchUserDN}
-        = $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::SearchUserDN' . $Param{Count} ) || '';
+        = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::SearchUserDN' . $Param{Count} ) || '';
     $Self->{SearchUserPw}
-        = $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::SearchUserPw' . $Param{Count} ) || '';
-    $Self->{GroupDN} = $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::GroupDN' . $Param{Count} )
+        = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::SearchUserPw' . $Param{Count} ) || '';
+    $Self->{GroupDN} = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::GroupDN' . $Param{Count} )
         || '';
     $Self->{AccessAttr}
-        = $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::AccessAttr' . $Param{Count} )
+        = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::AccessAttr' . $Param{Count} )
         || 'memberUid';
     $Self->{UserAttr}
-        = $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::UserAttr' . $Param{Count} )
+        = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::UserAttr' . $Param{Count} )
         || 'DN';
     $Self->{DestCharset}
-        = $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::Charset' . $Param{Count} )
+        = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::Charset' . $Param{Count} )
         || 'utf-8';
 
     # ldap filter always used
     $Self->{AlwaysFilter}
-        = $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::AlwaysFilter' . $Param{Count} ) || '';
+        = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::AlwaysFilter' . $Param{Count} ) || '';
 
     # Net::LDAP new params
-    if ( $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::Params' . $Param{Count} ) ) {
+    if ( $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::Params' . $Param{Count} ) ) {
         $Self->{Params}
-            = $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::Params' . $Param{Count} );
+            = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::Params' . $Param{Count} );
     }
     else {
         $Self->{Params} = {};
@@ -214,7 +214,7 @@ sub Sync {
 
     # sync user from ldap
     my $UserSyncMap
-        = $Self->{ConfigObject}->Get( 'AuthSyncModule::AD::UserSyncMap' . $Self->{Count} );
+        = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::UserSyncMap' . $Self->{Count} );
     if ($UserSyncMap) {
 
         # get whole user dn
@@ -417,7 +417,7 @@ sub Sync {
 
     # sync ldap group 2 otrs role permissions
     my $UserSyncRolesDefinition = $Self->{ConfigObject}->Get(
-        'AuthSyncModule::AD::UserSyncRolesDefinition' . $Self->{Count}
+        'AuthSyncModule::ConnectAD::UserSyncRolesDefinition' . $Self->{Count}
     );
     if ($UserSyncRolesDefinition) {
 
@@ -492,7 +492,7 @@ sub Sync {
 
     # sync ldap attribute 2 otrs group permissions
     $UserSyncGroupsDefinition = $Self->{ConfigObject}->Get(
-        'AuthSyncModule::AD::UserSyncAttributeGroupsDefinition' . $Self->{Count}
+        'AuthSyncModule::ConnectAD::UserSyncAttributeGroupsDefinition' . $Self->{Count}
     );
     if ($UserSyncGroupsDefinition) {
 
@@ -580,7 +580,7 @@ sub Sync {
 
     # sync ldap attribute 2 otrs role permissions
     $UserSyncRolesDefinition = $Self->{ConfigObject}->Get(
-        'AuthSyncModule::AD::UserSyncAttributeRolesDefinition' . $Self->{Count}
+        'AuthSyncModule::ConnectAD::UserSyncAttributeRolesDefinition' . $Self->{Count}
     );
     if ($UserSyncRolesDefinition) {
 

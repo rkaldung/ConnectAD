@@ -1,11 +1,11 @@
 # --
-# Kernel/System/Auth/Sync/AD.pm / provides sync against Active Directory 
+# Kernel/System/Auth/Sync/ConnectAD.pm / provides sync against Active Directory 
 # with nested groups support, based on
 # Kernel/System/Auth/LDAP.pm 
 # Kernel/System/Auth/HTTPBasicAuth.pm - provides the $ENV authentication
 #
 # Copyright (C) 2001-2010 OTRS AG, http://otrs.org/
-# Copyright (C) 2011 Shawn Poulson
+# Copyright (C) 2011 Shawn Poulson, http://explodingcoder.com/blog/about
 # Copyright (C) 2011 Roy Kaldung <roy@kaldung.com>
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
@@ -23,7 +23,7 @@
 # $Self->{LogoutURL} = 'http://host.example.com/thanks-for-using-otrs.html';
 # --
 
-package Kernel::System::Auth::AD;
+package Kernel::System::Auth::ConnectAD;
 
 use strict;
 use warnings;
@@ -51,82 +51,82 @@ sub new {
 
     # get ldap preferences
     $Self->{Count} = $Param{Count} || '';
-    $Self->{Die} = $Self->{ConfigObject}->Get( 'AuthModule::AD::Die' . $Param{Count} );
-    if ( $Self->{ConfigObject}->Get( 'AuthModule::AD::Host' . $Param{Count} ) ) {
-        $Self->{Host} = $Self->{ConfigObject}->Get( 'AuthModule::AD::Host' . $Param{Count} );
+    $Self->{Die} = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::Die' . $Param{Count} );
+    if ( $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::Host' . $Param{Count} ) ) {
+        $Self->{Host} = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::Host' . $Param{Count} );
     }
     else {
         $Self->{LogObject}->Log(
             Priority => 'error',
-            Message  => "Need AuthModule::AD::Host$Param{Count} in Kernel/Config.pm",
+            Message  => "Need AuthModule::ConnectAD::Host$Param{Count} in Kernel/Config.pm",
         );
         return;
     }
-    if ( defined( $Self->{ConfigObject}->Get( 'AuthModule::AD::BaseDN' . $Param{Count} ) ) ) {
-        $Self->{BaseDN} = $Self->{ConfigObject}->Get( 'AuthModule::AD::BaseDN' . $Param{Count} );
+    if ( defined( $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::BaseDN' . $Param{Count} ) ) ) {
+        $Self->{BaseDN} = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::BaseDN' . $Param{Count} );
     }
     else {
         $Self->{LogObject}->Log(
             Priority => 'error',
-            Message  => "Need AuthModule::AD::BaseDN$Param{Count} in Kernel/Config.pm",
+            Message  => "Need AuthModule::ConnectAD::BaseDN$Param{Count} in Kernel/Config.pm",
         );
         return;
     }
-    if ( $Self->{ConfigObject}->Get( 'AuthModule::AD::UID' . $Param{Count} ) ) {
-        $Self->{UID} = $Self->{ConfigObject}->Get( 'AuthModule::AD::UID' . $Param{Count} );
+    if ( $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::UID' . $Param{Count} ) ) {
+        $Self->{UID} = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::UID' . $Param{Count} );
     }
     else {
         $Self->{LogObject}->Log(
             Priority => 'error',
-            Message  => "Need AuthModule::AD::UID$Param{Count} in Kernel/Config.pm",
+            Message  => "Need AuthModule::ConnectAD::UID$Param{Count} in Kernel/Config.pm",
         );
         return;
     }
 
-    if ( $Self->{ConfigObject}->Get( 'AuthModule::AD::AuthType' . $Param{Count} ) ) {
-        $Self->{AuthType} = $Self->{ConfigObject}->Get( 'AuthModule::AD::AuthType' . $Param{Count} );
+    if ( $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::AuthType' . $Param{Count} ) ) {
+        $Self->{AuthType} = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::AuthType' . $Param{Count} );
     }
     else {
         $Self->{LogObject}->Log(
             Priority => 'error',
-            Message  => "Need AuthModule::AD::AuthType$Param{Count} in Kernel/Config.pm",
+            Message  => "Need AuthModule::ConnectAD::AuthType$Param{Count} in Kernel/Config.pm",
         );
         return;
     }
     if ( $Self->{AuthType} !~ m/(LOGIN|SSO)/ ) {
         $Self->{LogObject}->Log(
             Priority => 'error',
-            Message  => "Wrong value for AuthModule::AD::AuthType$Param{Count} in Kernel/Config.pm",
+            Message  => "Wrong value for AuthModule::ConnectAD::AuthType$Param{Count} in Kernel/Config.pm",
         );
         return;
     }
 
 
     $Self->{SearchUserDN}
-        = $Self->{ConfigObject}->Get( 'AuthModule::AD::SearchUserDN' . $Param{Count} ) || '';
+        = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::SearchUserDN' . $Param{Count} ) || '';
     $Self->{SearchUserPw}
-        = $Self->{ConfigObject}->Get( 'AuthModule::AD::SearchUserPw' . $Param{Count} ) || '';
-    $Self->{GroupDN} = $Self->{ConfigObject}->Get( 'AuthModule::AD::GroupDN' . $Param{Count} )
+        = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::SearchUserPw' . $Param{Count} ) || '';
+    $Self->{GroupDN} = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::GroupDN' . $Param{Count} )
         || '';
     $Self->{AccessAttr}
-        = $Self->{ConfigObject}->Get( 'AuthModule::AD::AccessAttr' . $Param{Count} )
+        = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::AccessAttr' . $Param{Count} )
         || 'memberUid';
-    $Self->{UserAttr} = $Self->{ConfigObject}->Get( 'AuthModule::AD::UserAttr' . $Param{Count} )
+    $Self->{UserAttr} = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::UserAttr' . $Param{Count} )
         || 'DN';
     $Self->{UserSuffix}
-        = $Self->{ConfigObject}->Get( 'AuthModule::AD::UserSuffix' . $Param{Count} ) || '';
+        = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::UserSuffix' . $Param{Count} ) || '';
     $Self->{UserLowerCase}
-        = $Self->{ConfigObject}->Get( 'AuthModule::AD::UserLowerCase' . $Param{Count} ) || 0;
-    $Self->{DestCharset} = $Self->{ConfigObject}->Get( 'AuthModule::AD::Charset' . $Param{Count} )
+        = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::UserLowerCase' . $Param{Count} ) || 0;
+    $Self->{DestCharset} = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::Charset' . $Param{Count} )
         || 'utf-8';
 
     # ldap filter always used
     $Self->{AlwaysFilter}
-        = $Self->{ConfigObject}->Get( 'AuthModule::AD::AlwaysFilter' . $Param{Count} ) || '';
+        = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::AlwaysFilter' . $Param{Count} ) || '';
 
     # Net::LDAP new params
-    if ( $Self->{ConfigObject}->Get( 'AuthModule::AD::Params' . $Param{Count} ) ) {
-        $Self->{Params} = $Self->{ConfigObject}->Get( 'AuthModule::AD::Params' . $Param{Count} );
+    if ( $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::Params' . $Param{Count} ) ) {
+        $Self->{Params} = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::Params' . $Param{Count} );
     }
     else {
         $Self->{Params} = {};
@@ -453,6 +453,7 @@ sub _GetTokenGroups($$) {
       return $results->entry(0)->get_value('tokenGroups');
    }
 }
+
 sub _GetSidByDN($$) {
    my ($ldap, $objectDN) = @_;
 
@@ -467,6 +468,5 @@ sub _GetSidByDN($$) {
       return $results->entry(0)->get_value('objectSid');
    }
 }
-
 
 1;
