@@ -20,7 +20,7 @@ Tips & Tricks
 	#recommended with LDAPs 
     my @DCs = ('ldaps://dc1.domain.tld:636/', 'ldaps://dc2.domain.tld:636/');
  
-    $Self->{'AuthModule::AD::Host'} = \@DCs;
+    $Self->{'AuthModule::ConnectAD::Host'} = \@DCs;
     # specify the failover timeout in seconds
     $Self->{'Customer::AuthModule::AD::Params'}    = {
         timeout => 2,
