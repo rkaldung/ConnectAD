@@ -14,15 +14,15 @@ Tips & Tricks
 * use multiple domain controllers with failover
 
 ````perl
-	#select your domain controller
-	my @DCs = ('dc1.domain.tld', 'dc2.domain.tld');
-  
+    #select your domain controller
+    my @DCs = ('dc1.domain.tld', 'dc2.domain.tld');
+
 	#recommended with LDAPs 
-  my @DCs = ('ldaps://dc1.domain.tld:636/', 'ldaps://dc2.domain.tld:636/');
+    my @DCs = ('ldaps://dc1.domain.tld:636/', 'ldaps://dc2.domain.tld:636/');
  
-  $Self->{'AuthModule::AD::Host'} = \@DCs;
-  \# specify the failover timeout in seconds
-  $Self->{'Customer::AuthModule::AD::Params'}    = {
-      timeout => 2,
-  }; ` 
+    $Self->{'AuthModule::AD::Host'} = \@DCs;
+    # specify the failover timeout in seconds
+    $Self->{'Customer::AuthModule::AD::Params'}    = {
+        timeout => 2,
+    }; 
 ````
