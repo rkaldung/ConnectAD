@@ -1,7 +1,7 @@
 # --
-# Kernel/System/Auth/Sync/AD.pm / provides sync against Active Directory 
+# Kernel/System/Auth/Sync/ConnectAD.pm / provides sync against Active Directory 
 # with nested groups support, based on
-# Kernel/System/Auth/Sync/LDAP.pm (LDAP.pm,v 1.10 2010/11/11 09:24:45 bes)
+# Kernel/System/Auth/Sync/LDAP.pm
 #
 # Copyright (C) 2001-2010 OTRS AG, http://otrs.org/
 # Copyright (C) 2011 Shawn Poulson
@@ -79,7 +79,7 @@ sub new {
         || '';
     $Self->{AccessAttr}
         = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::AccessAttr' . $Param{Count} )
-        || 'memberUid';
+        || 'member';
     $Self->{UserAttr}
         = $Self->{ConfigObject}->Get( 'AuthSyncModule::ConnectAD::UserAttr' . $Param{Count} )
         || 'DN';

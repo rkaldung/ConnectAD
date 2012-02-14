@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <otrs_package version="1.0">
     <Name>ConnectAD</Name>
-    <Version>0.2.3</Version>
+    <Version>0.2.7</Version>
     <Framework>3.0.x</Framework>
+    <Framework>2.4.x</Framework>
     <Vendor>Roy Kaldung &lt;roy@kaldung.com&gt;</Vendor>
     <URL>http://kaldung.com/</URL>
     <License>GNU AFFERO GENERAL PUBLIC LICENSE Version 3, November 2007</License>
     <ChangeLog Version="0.1" Date="2011-10-15 20:00:00">initial release</ChangeLog>
     <ChangeLog Version="0.2" Date="2012-01-05 19:05:00">added parameter for Kerberos/Formbased login</ChangeLog>
     <ChangeLog Version="0.2.1" Date="2012-01-05 19:05:00">added config documentation</ChangeLog>
+    <ChangeLog Version="0.2.7" Date="2012-01-13 21:40:00">initial public release</ChangeLog>
     <Description Lang="en">Sync and authenticate against an Active Directory, regarding AGDLP (nested groups).</Description>
-    <IntroInstall Type="post" Lang="en" Title="Configuration needed!">Details on configuration can be found in doc/en/syncad</IntroInstall>
+    <IntroInstall Type="post" Lang="en" Title="Configuration needed!">Details on configuration can be on http://github.com/rkaldung/ConnectAD</IntroInstall>
     <BuildDate>?</BuildDate>
     <BuildHost>?</BuildHost>
     <Filelist>
-        <!-- <File Permission="644" Location="Kernel/System/Auth/Kerberos.pm"></File> -->
-        <File Permission="644" Location="doc/en/ConnectAD.pdf"></File>
         <File Permission="644" Location="Kernel/System/Auth/Sync/ConnectAD.pm"></File>
         <File Permission="644" Location="Kernel/System/Auth/ConnectAD.pm"></File>
         <File Permission="644" Location="Kernel/System/CustomerUser/ConnectAD.pm"></File>

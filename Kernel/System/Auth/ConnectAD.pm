@@ -1,12 +1,12 @@
 # --
-# Kernel/System/Auth/Sync/ConnectAD.pm / provides sync against Active Directory 
+# Kernel/System/Auth/ConnectAD.pm / provides authentication against Active Directory 
 # with nested groups support, based on
-# Kernel/System/Auth/LDAP.pm 
-# Kernel/System/Auth/HTTPBasicAuth.pm - provides the $ENV authentication
+# Kernel/System/Auth/LDAP.pm  and 
+# Kernel/System/Auth/HTTPBasicAuth.pm
 #
 # Copyright (C) 2001-2010 OTRS AG, http://otrs.org/
 # Copyright (C) 2011 Shawn Poulson, http://explodingcoder.com/blog/about
-# Copyright (C) 2011 Roy Kaldung <roy@kaldung.com>
+# Copyright (C) 2011 Roy Kaldung, <roy@kaldung.com>
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -14,7 +14,7 @@
 # --
 # Note:
 #
-# If you use this module with AuthType ENV, you should use as fallback the following
+# If you use this module with AuthType SSO, you should use as fallback the following
 # config settings:
 #
 # If use isn't login through apache ($ENV{REMOTE_USER} or $ENV{HTTP_REMOTE_USER})
@@ -93,7 +93,7 @@ sub new {
         );
         return;
     }
-    if ( $Self->{AuthType} !~ m/(LOGIN|SSO)/ ) {
+    if ( $Self->{AuthType} !~ m/^(LOGIN|SSO)$/ ) {
         $Self->{LogObject}->Log(
             Priority => 'error',
             Message  => "Wrong value for AuthModule::ConnectAD::AuthType$Param{Count} in Kernel/Config.pm",
@@ -110,13 +110,13 @@ sub new {
         || '';
     $Self->{AccessAttr}
         = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::AccessAttr' . $Param{Count} )
-        || 'memberUid';
+        || 'member';
     $Self->{UserAttr} = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::UserAttr' . $Param{Count} )
-        || 'DN';
+        || 'userPrincipalName';
     $Self->{UserSuffix}
         = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::UserSuffix' . $Param{Count} ) || '';
     $Self->{UserLowerCase}
-        = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::UserLowerCase' . $Param{Count} ) || 0;
+        = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::UserLowerCase' . $Param{Count} ) || 1;
     $Self->{DestCharset} = $Self->{ConfigObject}->Get( 'AuthModule::ConnectAD::Charset' . $Param{Count} )
         || 'utf-8';
 
@@ -151,48 +151,6 @@ sub GetOption {
     return $Option{ $Param{What} };
 }
 
-sub Auth_alt {
-    my ( $Self, %Param ) = @_;
-
-    # get params
-    my $User       = $ENV{REMOTE_USER} || $ENV{HTTP_REMOTE_USER};
-    my $RemoteAddr = $ENV{REMOTE_ADDR} || 'Got no REMOTE_ADDR env!';
-
-    # return on no user
-    if ( !$User ) {
-        $Self->{LogObject}->Log(
-            Priority => 'notice',
-            Message =>
-                "User: No \$ENV{REMOTE_USER} or \$ENV{HTTP_REMOTE_USER} !(REMOTE_ADDR: $RemoteAddr).",
-        );
-        return;
-    }
-
-    # replace login parts
-    my $Replace = $Self->{ConfigObject}->Get(
-        'AuthModule::HTTPBasicAuth::Replace' . $Self->{Count},
-    );
-    if ($Replace) {
-        $User =~ s/^\Q$Replace\E//;
-    }
-
-    # regexp on login
-    my $ReplaceRegExp = $Self->{ConfigObject}->Get(
-        'AuthModule::HTTPBasicAuth::ReplaceRegExp' . $Self->{Count},
-    );
-    if ($ReplaceRegExp) {
-        $User =~ s/$ReplaceRegExp/$1/;
-    }
-
-    # log
-    $Self->{LogObject}->Log(
-        Priority => 'notice',
-        Message  => "User: $User authentication ok (REMOTE_ADDR: $RemoteAddr).",
-    );
-
-    # return login
-    return $User;
-}
 
 
 sub Auth {
@@ -220,7 +178,7 @@ sub Auth {
 
     # replace login parts
     my $Replace = $Self->{ConfigObject}->Get(
-        'AuthModule::AD',
+        'AuthModule::ConnectAD::Replace' . $Self->{Count},
     );
     if ($Replace) {
         $Param{User} =~ s/^\Q$Replace\E//;
@@ -228,11 +186,23 @@ sub Auth {
 
     # regexp on login
     my $ReplaceRegExp = $Self->{ConfigObject}->Get(
-        'AuthModule::AD',
+        'AuthModule::ConnectAD::ReplaceRegExp' . $Self->{Count},
     );
     if ($ReplaceRegExp) {
         $Param{User} =~ s/$ReplaceRegExp/$1/;
     }
+    
+    # 
+    if ( $Self->{AuthType} eq "LOGIN" ) {
+    	# log
+    	$Self->{LogObject}->Log(
+        	Priority => 'notice',
+        	Message  => "User: $Param{User} authentication ok (REMOTE_ADDR: $RemoteAddr).",
+    	);
+    	return $Param{User};
+    }
+    
+    # go ahead with LDAP authentication
 
     # remove leading and trailing spaces
     $Param{User} =~ s/^\s+//;
@@ -348,19 +318,19 @@ sub Auth {
     if ( $Self->{GroupDN} ) {
 
         # just in case for debug
-        #if ( $Self->{Debug} > 0 ) {
+        if ( $Self->{Debug} > 0 ) {
             $Self->{LogObject}->Log(
                 Priority => 'notice',
                 Message  => 'check for groupdn!',
             );
-        #}
+        }
 
         # search if we're allowed to
-	my $Result2 = _IsMemberOf($LDAP, $UserDN, $Self->{GroupDN});
-	$Self->{LogObject}->Log(
-		Priority => 'debug',
-		Message => "UserDN $UserDN",
-	);
+		my $Result2 = _IsMemberOf($LDAP, $UserDN, $Self->{GroupDN});
+		$Self->{LogObject}->Log(
+			Priority => 'debug',
+			Message => "UserDN $UserDN",
+		);
 
         # log if there is no LDAP entry
         if ( !$Result2 ) {
@@ -368,7 +338,7 @@ sub Auth {
             # failed login note
             $Self->{LogObject}->Log(
                 Priority => 'notice',
-                Message  => "User: $Param{User} authentication failed, no LDAP group entry found"
+                Message  => "User: $Param{User} authentication failed, no AD group entry found"
                     . "GroupDN='$Self->{GroupDN}', UserDN='$UserDN'! (REMOTE_ADDR: $RemoteAddr).",
             );
 
