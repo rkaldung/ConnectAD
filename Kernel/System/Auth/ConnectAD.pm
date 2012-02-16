@@ -172,7 +172,7 @@ sub Auth {
             Priority => 'notice',
             Message =>
                 "User: No \$ENV{REMOTE_USER} or \$ENV{HTTP_REMOTE_USER} !(REMOTE_ADDR: $RemoteAddr).",
-        );
+        ) if $Self->{AuthType} eq "SSO" ;
         return;
     }
 
