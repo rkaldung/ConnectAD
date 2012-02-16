@@ -4,6 +4,17 @@ ConnectAD
 This is an OTRS package for authentication (agents and users) and syncing (agents) against an Active Directory.
 All configured groups can be nested to support [AGDLP](http://en.wikipedia.org/wiki/AGDLP)
 
+## Installation via SysConfig and Package Manager ##
+
+For an easy installation (without command line) add my repository to your configuration.
+Go to Admin -> SysConfig -> Framework -> Core::Package. Enable Package::RepositoryList and add the following entry:
+
+	Key: http://otrs.kaldung.com/packages30
+	Content: OTRS Repo kaldung.com
+	
+Now you are able to add ConnectAD to your OTRS. The configuration is done via editing Kernel/Config.pm, example are shown below.
+
+
 ## Kernel::System::Auth::ConnectAD ##
 
 Here is an example configuration for authentication:
