@@ -7,6 +7,7 @@ All configured groups can be nested to support [AGDLP](http://en.wikipedia.org/w
 ## Kernel::System::Auth::ConnectAD ##
 
 Here is an example configuration for authentication:
+
 ````perl
     # choose ConnectAD for agent authentication
     $Self->{'AuthModule'} = 'Kernel::System::Auth::ConnectAD';
@@ -28,6 +29,7 @@ Here is an example configuration for authentication:
     $Self->{'AuthModule::ConnectAD::SearchUserPw'} = 'secret';
     # ignore entries with objectClass=contact
     $Self->{'AuthModule::ConnectAD::AlwaysFilter'} = '(!(objectClass=contact))';
+    
 ````
 ## Kernel::System::Auth::Sync::ConnectAD ##
 
