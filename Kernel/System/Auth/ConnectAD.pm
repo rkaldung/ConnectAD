@@ -40,7 +40,7 @@ sub new {
     bless( $Self, $Type );
 
     # check needed objects
-    for (qw(LogObject ConfigObject DBObject)) {
+    for (qw(LogObject ConfigObject DBObject EncodeObject)) {
         $Self->{$_} = $Param{$_} || die "No $_!";
     }
 
