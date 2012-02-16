@@ -361,4 +361,47 @@ sub _ConvertTo {
     );
 }
 
+
+sub _IsMemberOf($$$) {
+   my ($ldap, $objectDN, $groupDN) = @_;
+   return if ($groupDN eq "");
+
+   my $groupSid = _GetSidByDN($ldap, $groupDN);
+   return if ($groupSid eq "");
+
+   my @matches = grep { $_ eq $groupSid } _GetTokenGroups($ldap, $objectDN);
+
+   @matches > 0;
+}
+
+sub _GetTokenGroups($$) {
+   my ($ldap, $objectDN) = @_;
+
+   my $results = $ldap->search(
+      base => $objectDN,
+      scope => 'base',
+      filter => '(objectCategory=*)',
+      attrs => ['tokenGroups']
+   );
+
+   if ($results->count) {
+      return $results->entry(0)->get_value('tokenGroups');
+   }
+}
+
+sub _GetSidByDN($$) {
+   my ($ldap, $objectDN) = @_;
+
+   my $results = $ldap->search(
+      base => $objectDN,
+      scope => 'base',
+      filter => '(objectCategory=*)',
+      attrs => ['objectSid']
+   );
+
+   if ($results->count) {
+      return $results->entry(0)->get_value('objectSid');
+   }
+}
+
 1;

@@ -10,9 +10,9 @@
     <ChangeLog Version="0.2" Date="2012-01-05 19:05:00">added parameter for Kerberos/Formbased login</ChangeLog>
     <ChangeLog Version="0.2.1" Date="2012-01-05 19:05:00">added config documentation</ChangeLog>
     <ChangeLog Version="0.2.7" Date="2012-01-13 21:40:00">initial public release</ChangeLog>
-    <ChangeLog Version="0.2.8" Date="2012-01-16 21:20:00">some LOGIN and SSO login successful tested</ChangeLog>
+    <ChangeLog Version="0.2.8" Date="2012-01-16 21:20:00">LOGIN and SSO login successful tested</ChangeLog>
     <Description Lang="en">Sync and authenticate against an Active Directory, regarding AGDLP (nested groups).</Description>
-    <IntroInstall Type="post" Lang="en" Title="Configuration needed!">Details on configuration can be on http://github.com/rkaldung/ConnectAD</IntroInstall>
+    <IntroInstall Type="post" Lang="en" Title="Configuration needed!">Details on configuration can be found on http://github.com/rkaldung/ConnectAD</IntroInstall>
     <BuildDate>?</BuildDate>
     <BuildHost>?</BuildHost>
     <Filelist>
