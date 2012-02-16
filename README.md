@@ -8,7 +8,6 @@ All configured groups can be nested to support [AGDLP](http://en.wikipedia.org/w
 
 Here is an example configuration for authentication:
 ````perl
-
     # choose ConnectAD for agent authentication
     $Self->{'AuthModule'} = 'Kernel::System::Auth::ConnectAD';
     # which Domain Controller to use
