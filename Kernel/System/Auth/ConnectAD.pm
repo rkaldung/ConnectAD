@@ -166,15 +166,6 @@ sub Auth {
     }
     my $RemoteAddr  = $ENV{REMOTE_ADDR} || 'Got no REMOTE_ADDR env!';
 
-    # return on no user
-    if ( !$Param{User} ) {
-        $Self->{LogObject}->Log(
-            Priority => 'notice',
-            Message =>
-                "User: No \$ENV{REMOTE_USER} or \$ENV{HTTP_REMOTE_USER} !(REMOTE_ADDR: $RemoteAddr).",
-        ) if $Self->{AuthType} eq "SSO" ;
-        return;
-    }
 
     # replace login parts
     my $Replace = $Self->{ConfigObject}->Get(
@@ -191,29 +182,29 @@ sub Auth {
     if ($ReplaceRegExp) {
         $Param{User} =~ s/$ReplaceRegExp/$1/;
     }
-    
-    # 
-    if ( $Self->{AuthType} eq "LOGIN" ) {
-    	# log
-    	$Self->{LogObject}->Log(
-        	Priority => 'notice',
-        	Message  => "User: $Param{User} authentication ok (REMOTE_ADDR: $RemoteAddr).",
-    	);
-    	return $Param{User};
-    }
-    
-    # go ahead with LDAP authentication
 
     # remove leading and trailing spaces
     $Param{User} =~ s/^\s+//;
     $Param{User} =~ s/\s+$//;
+
+    # return on no user
+    if ( !$Param{User} ) {
+        $Self->{LogObject}->Log(
+            Priority => 'notice',
+            Message =>
+                "User: No \$ENV{REMOTE_USER} or \$ENV{HTTP_REMOTE_USER} !(REMOTE_ADDR: $RemoteAddr).",
+        ) if $Self->{AuthType} eq "SSO" ;
+        return;
+    }
+    
+    # go ahead with LDAP authentication
 
     # Convert username to lower case letters
     if ( $Self->{UserLowerCase} ) {
         $Param{User} = lc $Param{User};
     }
 
-    # add user suffix
+    # add user suffix, e.g. domain part
     if ( $Self->{UserSuffix} ) {
         $Param{User} .= $Self->{UserSuffix};
 
@@ -327,10 +318,12 @@ sub Auth {
 
         # search if we're allowed to
 		my $Result2 = _IsMemberOf($LDAP, $UserDN, $Self->{GroupDN});
-		$Self->{LogObject}->Log(
-			Priority => 'debug',
-			Message => "UserDN $UserDN",
-		);
+		if ( $Self->{Debug} > 0 ) {
+			$Self->{LogObject}->Log(
+				Priority => 'debug',
+				Message => "UserDN $UserDN",
+			);
+		}
 
         # log if there is no LDAP entry
         if ( !$Result2 ) {
@@ -347,6 +340,26 @@ sub Auth {
             $LDAP->disconnect;
             return;
         }
+    }
+    
+    if ( $Self->{AuthType} eq 'LOGIN' ) {
+	    # bind with user data -> real user auth.
+	    $Result = $LDAP->bind( dn => $UserDN, password => $Param{Pw} );
+	    if ( $Result->code ) {
+
+	        # failed login note
+	        $Self->{LogObject}->Log(
+	            Priority => 'notice',
+	            Message  => "User: $Param{User} ($UserDN) authentication failed: '"
+	                . $Result->error()
+	                . "' (REMOTE_ADDR: $RemoteAddr).",
+	        );
+
+	        # take down session
+	        $LDAP->unbind;
+	        $LDAP->disconnect;
+	        return;
+	    }
     }
 
     # login note
