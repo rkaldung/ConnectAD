@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <otrs_package version="1.0">
     <Name>ConnectAD</Name>
-    <Version>0.2.8</Version>
+    <Version>0.2.9</Version>
     <Framework>3.0.x</Framework>
     <Vendor>Roy Kaldung &lt;roy@kaldung.com&gt;</Vendor>
     <URL>http://kaldung.com/</URL>
@@ -11,6 +11,7 @@
     <ChangeLog Version="0.2.1" Date="2012-01-05 19:05:00">added config documentation</ChangeLog>
     <ChangeLog Version="0.2.7" Date="2012-01-13 21:40:00">initial public release</ChangeLog>
     <ChangeLog Version="0.2.8" Date="2012-01-16 21:20:00">LOGIN and SSO login successful tested</ChangeLog>
+    <ChangeLog Version="0.2.8" Date="2012-01-17 20:05:00">bug fixes</ChangeLog>
     <Description Lang="en">Sync and authenticate against an Active Directory, regarding AGDLP (nested groups).</Description>
     <IntroInstall Type="post" Lang="en" Title="Configuration needed!">Details on configuration can be found on http://github.com/rkaldung/ConnectAD</IntroInstall>
     <BuildDate>?</BuildDate>
