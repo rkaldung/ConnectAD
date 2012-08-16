@@ -6,13 +6,11 @@ All configured groups can be nested to support [AGDLP](http://en.wikipedia.org/w
 
 ## Installation via SysConfig and Package Manager ##
 
-For an easy installation (without command line) add my repository to your configuration.
-Go to Admin -> SysConfig -> Framework -> Core::Package. Enable Package::RepositoryList and add the following entry:
-
-	Key: http://otrs.kaldung.com/packages30
-	Content: OTRS Repo kaldung.com
+For an easy installation (without command line) the opmzone.org repository to your installation.
+Download the latest [OPMZone.opm](http://opmzone.org/) package from [http://packages.opmzone.org/](http://packages.opmzone.org/) and install it.
 	
-Now you are able to add ConnectAD to your OTRS. The configuration is done via editing Kernel/Config.pm, example are shown below.
+Now you are able to add ConnectAD to your OTRS via the package manager - and a many other too.
+The configuration is done via editing Kernel/Config.pm, example are shown below.
 
 
 ## Kernel::System::Auth::ConnectAD ##
