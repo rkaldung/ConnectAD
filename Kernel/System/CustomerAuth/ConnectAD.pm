@@ -255,7 +255,7 @@ sub Auth {
     $UserDNQuote =~ s/\)/\\)/g;
 
     # check if user need to be in a group!
-    if ( $Self->{AccessAttr} && $Self->{GroupDN} ) {
+    if ( $Self->{GroupDN} ) {
 
         # just in case for debug
         if ( $Self->{Debug} > 0 ) {
@@ -266,19 +266,14 @@ sub Auth {
         }
 
         # search if we're allowed to
-        my $Filter2 = '';
-        if ( $Self->{UserAttr} eq 'DN' ) {
-            $Filter2 = "($Self->{AccessAttr}=$UserDNQuote)";
-        }
-        else {
-            $Filter2 = "($Self->{AccessAttr}=$UserQuote)";
-        }
-        my $Result2 = $LDAP->search(
-            base   => $Self->{GroupDN},
-            filter => $Filter2,
-            attrs  => ['1.1'],
-        );
-        if ( $Result2->code ) {
+		my $Result2 = _IsMemberOf($LDAP, $UserDN, $Self->{GroupDN});
+		if ( $Self->{Debug} > 0 ) {
+			$Self->{LogObject}->Log(
+				Priority => 'debug',
+				Message => "UserDN $UserDN",
+			);
+		}
+        if ( $Result2 ) {
             $Self->{LogObject}->Log(
                 Priority => 'error',
                 Message  => "Search failed! base='$Self->{GroupDN}', filter='$Filter2', "

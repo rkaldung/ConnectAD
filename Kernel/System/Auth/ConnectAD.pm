@@ -327,7 +327,6 @@ sub Auth {
 
         # log if there is no LDAP entry
         if ( !$Result2 ) {
-
             # failed login note
             $Self->{LogObject}->Log(
                 Priority => 'notice',
