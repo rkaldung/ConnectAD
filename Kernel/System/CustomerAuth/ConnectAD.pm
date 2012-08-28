@@ -276,7 +276,7 @@ sub Auth {
         if ( $Result2 ) {
             $Self->{LogObject}->Log(
                 Priority => 'error',
-                Message  => "Search failed! base='$Self->{GroupDN}', filter='$Filter2', "
+                Message  => "Search failed! base='$Self->{GroupDN}'"
                     . $Result->error,
             );
             $LDAP->unbind;
@@ -298,7 +298,7 @@ sub Auth {
                 Priority => 'notice',
                 Message =>
                     "CustomerUser: $Param{User} authentication failed, no LDAP group entry found"
-                    . "GroupDN='$Self->{GroupDN}', Filter='$Filter2'! (REMOTE_ADDR: $RemoteAddr).",
+                    . "GroupDN='$Self->{GroupDN}'! (REMOTE_ADDR: $RemoteAddr).",
             );
 
             # take down session
