@@ -273,7 +273,7 @@ sub Auth {
 				Message => "UserDN $UserDN",
 			);
 		}
-        if ( $Result2 ) {
+        if ( !$Result2 ) {
             $Self->{LogObject}->Log(
                 Priority => 'error',
                 Message  => "Search failed! base='$Self->{GroupDN}'"
@@ -284,28 +284,6 @@ sub Auth {
             return;
         }
 
-        # extract it
-        my $GroupDN = '';
-        for my $Entry ( $Result2->all_entries ) {
-            $GroupDN = $Entry->dn();
-        }
-
-        # log if there is no LDAP entry
-        if ( !$GroupDN ) {
-
-            # failed login note
-            $Self->{LogObject}->Log(
-                Priority => 'notice',
-                Message =>
-                    "CustomerUser: $Param{User} authentication failed, no LDAP group entry found"
-                    . "GroupDN='$Self->{GroupDN}'! (REMOTE_ADDR: $RemoteAddr).",
-            );
-
-            # take down session
-            $LDAP->unbind;
-            $LDAP->disconnect;
-            return;
-        }
     }
 
     # bind with user data -> real user auth.
