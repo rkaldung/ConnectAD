@@ -1,23 +1,37 @@
 # --
-# Kernel/System/CustomerAuth/ConnectAD.pm - provides the ldap authentication
-# Copyright (C) 2001-2011 OTRS AG, http://otrs.org/
+# Kernel/System/CustomerAuth/ConnectAD.pm / provides authentication against Active Directory
+# with nested groups support, based on
+# Kernel/System/CustomerAuth/LDAP.pm  and
+# Kernel/System/CustomerAuth/HTTPBasicAuth.pm
+#
+# Copyright (C) 2001-2010 OTRS AG, http://otrs.org/
 # Copyright (C) 2011 Shawn Poulson, http://explodingcoder.com/blog/about
 # Copyright (C) 2011 Roy Kaldung, <roy@kaldung.com>
+# Copyright (C) 2015 Ruslan Sadykov, <manofring@gmail.com>
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
 # did not receive this file, see http://www.gnu.org/licenses/agpl.txt.
+# --
+# Note:
+#
+# If you use this module with AuthType SSO, you should use as fallback the following
+# config settings:
+#
+# If use isn't login through apache ($ENV{REMOTE_USER} or $ENV{HTTP_REMOTE_USER})
+# $Self->{CustomerPanelLoginURL} = 'http://host.example.com/not-authorised-for-otrs.html';
+#
+# $Self->{CustomerPanelLogoutURL} = 'http://host.example.com/thanks-for-using-otrs.html';
 # --
 
 package Kernel::System::CustomerAuth::ConnectAD;
 
 use strict;
 use warnings;
-
 use Net::LDAP;
 
 use vars qw($VERSION);
-$VERSION = qw($Revision: 1.37 $) [1];
+$VERSION = qw($Revision: 1.38 $) [1];
 
 sub new {
     my ( $Type, %Param ) = @_;
@@ -35,10 +49,10 @@ sub new {
     $Self->{Debug} = 0;
 
     # get ldap preferences
+    $Self->{Count} = $Param{Count} || '';
     $Self->{Die} = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::Die' . $Param{Count} );
     if ( $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::Host' . $Param{Count} ) ) {
-        $Self->{Host}
-            = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::Host' . $Param{Count} );
+        $Self->{Host} = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::Host' . $Param{Count} );
     }
     else {
         $Self->{LogObject}->Log(
@@ -47,14 +61,8 @@ sub new {
         );
         return;
     }
-    if (
-        defined(
-            $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::BaseDN' . $Param{Count} )
-        )
-        )
-    {
-        $Self->{BaseDN}
-            = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::BaseDN' . $Param{Count} );
+    if ( defined( $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::BaseDN' . $Param{Count} ) ) ) {
+        $Self->{BaseDN} = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::BaseDN' . $Param{Count} );
     }
     else {
         $Self->{LogObject}->Log(
@@ -64,8 +72,7 @@ sub new {
         return;
     }
     if ( $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::UID' . $Param{Count} ) ) {
-        $Self->{UID}
-            = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::UID' . $Param{Count} );
+        $Self->{UID} = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::UID' . $Param{Count} );
     }
     else {
         $Self->{LogObject}->Log(
@@ -74,20 +81,41 @@ sub new {
         );
         return;
     }
+
+    if ( $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::AuthType' . $Param{Count} ) ) {
+        $Self->{AuthType} = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::AuthType' . $Param{Count} );
+    }
+    else {
+        $Self->{LogObject}->Log(
+            Priority => 'error',
+            Message  => "Need Customer::AuthModule::ConnectAD::AuthType$Param{Count} in Kernel/Config.pm",
+        );
+        return;
+    }
+    if ( $Self->{AuthType} !~ m/^(LOGIN|SSO)$/ ) {
+        $Self->{LogObject}->Log(
+            Priority => 'error',
+            Message  => "Wrong value for Customer::AuthModule::ConnectAD::AuthType$Param{Count} in Kernel/Config.pm",
+        );
+        return;
+    }
+
     $Self->{SearchUserDN}
-        = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::SearchUserDN' . $Param{Count} )
-        || '';
+        = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::SearchUserDN' . $Param{Count} ) || '';
     $Self->{SearchUserPw}
-        = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::SearchUserPw' . $Param{Count} )
-        || '';
+        = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::SearchUserPw' . $Param{Count} ) || '';
     $Self->{GroupDN}
         = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::GroupDN' . $Param{Count} ) || '';
     $Self->{AccessAttr}
         = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::AccessAttr' . $Param{Count} )
         || '';
+
     $Self->{UserAttr}
         = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::UserAttr' . $Param{Count} )
-        || 'DN';
+        || 'userPrincipalName';
+    $Self->{UserLowerCase}
+        = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::UserLowerCase' . $Param{Count} ) || 1;
+
     $Self->{UserSuffix}
         = $Self->{ConfigObject}->Get( 'Customer::AuthModule::ConnectAD::UserSuffix' . $Param{Count} )
         || '';
@@ -122,7 +150,7 @@ sub GetOption {
     }
 
     # module options
-    my %Option = ( PreAuth => 0, );
+    my %Option = ( PreAuth => 1, );
 
     # return option
     return $Option{ $Param{What} };
@@ -130,23 +158,53 @@ sub GetOption {
 
 sub Auth {
     my ( $Self, %Param ) = @_;
-
-    # check needed stuff
-    for (qw(User Pw)) {
-        if ( !$Param{$_} ) {
-            $Self->{LogObject}->Log( Priority => 'error', Message => "Need $_!" );
-            return;
-        }
-    }
-    $Param{User} = $Self->_ConvertTo( $Param{User}, $Self->{ConfigObject}->Get('DefaultCharset') );
-    $Param{Pw}   = $Self->_ConvertTo( $Param{Pw},   $Self->{ConfigObject}->Get('DefaultCharset') );
-
     # get params
-    my $RemoteAddr = $ENV{REMOTE_ADDR} || 'Got no REMOTE_ADDR env!';
+    if ( $Self->{AuthType} eq "LOGIN" ) {
+        $Param{User} = $Self->_ConvertTo( $Param{User}, $Self->{ConfigObject}->Get('DefaultCharset') );
+        $Param{Pw}   = $Self->_ConvertTo( $Param{Pw},   $Self->{ConfigObject}->Get('DefaultCharset') );
+    }
+    else {
+        $Param{User} = $ENV{REMOTE_USER} || $ENV{HTTP_REMOTE_USER};
+    }
+    my $RemoteAddr  = $ENV{REMOTE_ADDR} || 'Got no REMOTE_ADDR env!';
+
+
+    # replace login parts
+    my $Replace = $Self->{ConfigObject}->Get(
+        'Customer::AuthModule::ConnectAD::Replace' . $Self->{Count},
+    );
+    if ($Replace) {
+        $Param{User} =~ s/^\Q$Replace\E//;
+    }
+
+    # regexp on login
+    my $ReplaceRegExp = $Self->{ConfigObject}->Get(
+        'Customer::AuthModule::ConnectAD::ReplaceRegExp' . $Self->{Count},
+    );
+    if ($ReplaceRegExp) {
+        $Param{User} =~ s/$ReplaceRegExp/$1/;
+    }
 
     # remove leading and trailing spaces
     $Param{User} =~ s/^\s+//;
     $Param{User} =~ s/\s+$//;
+
+    # return on no user
+    if ( !$Param{User} ) {
+        $Self->{LogObject}->Log(
+            Priority => 'notice',
+            Message =>
+                "User: No \$ENV{REMOTE_USER} or \$ENV{HTTP_REMOTE_USER} !(REMOTE_ADDR: $RemoteAddr).",
+        ) if $Self->{AuthType} eq "SSO" ;
+        return;
+    }
+
+    # go ahead with LDAP authentication
+
+    # Convert username to lower case letters
+    if ( $Self->{UserLowerCase} ) {
+        $Param{User} = lc $Param{User};
+    }
 
     # add user suffix
     if ( $Self->{UserSuffix} ) {
@@ -222,6 +280,8 @@ sub Auth {
             Priority => 'error',
             Message  => 'Search failed! ' . $Result->error,
         );
+
+        $LDAP->unbind;
         $LDAP->disconnect;
         return;
     }
@@ -273,12 +333,18 @@ sub Auth {
 				Message => "UserDN $UserDN",
 			);
 		}
+
+
+        # log if there is no LDAP entry
         if ( !$Result2 ) {
+            # failed login note
             $Self->{LogObject}->Log(
-                Priority => 'error',
-                Message  => "Search failed! base='$Self->{GroupDN}'"
-                    . $Result->error,
+                Priority => 'notice',
+                Message  => "CustomerUser: $Param{User} authentication failed, no AD group entry found"
+                    . "GroupDN='$Self->{GroupDN}', UserDN='$UserDN'! (REMOTE_ADDR: $RemoteAddr).",
             );
+
+            # take down session
             $LDAP->unbind;
             $LDAP->disconnect;
             return;
@@ -286,23 +352,24 @@ sub Auth {
 
     }
 
-    # bind with user data -> real user auth.
-    $Result = $LDAP->bind( dn => $UserDN, password => $Param{Pw} );
-    if ( $Result->code ) {
+    if ( $Self->{AuthType} eq 'LOGIN' ) {
+	    # bind with user data -> real user auth.
+	    $Result = $LDAP->bind( dn => $UserDN, password => $Param{Pw} );
+	    if ( $Result->code ) {
 
-        # failed login note
-        $Self->{LogObject}->Log(
-            Priority => 'notice',
-            Message  => "CustomerUser: $Param{User} ($UserDN) authentication failed: '"
-                . $Result->error . "' (REMOTE_ADDR: $RemoteAddr).",
-        );
+	        # failed login note
+	        $Self->{LogObject}->Log(
+	            Priority => 'notice',
+	            Message  => "CustomerUser: $Param{User} ($UserDN) authentication failed: '"
+	                . $Result->error() . "' (REMOTE_ADDR: $RemoteAddr).",
+	        );
 
-        # take down session
-        $LDAP->unbind;
-        $LDAP->disconnect;
-        return;
+	        # take down session
+	        $LDAP->unbind;
+	        $LDAP->disconnect;
+	        return;
+	    }
     }
-
     # login note
     $Self->{LogObject}->Log(
         Priority => 'notice',
@@ -334,6 +401,23 @@ sub _ConvertTo {
     );
 }
 
+sub _ConvertFrom {
+    my ( $Self, $Text, $Charset ) = @_;
+
+    return if !defined $Text;
+
+    if ( !$Charset || !$Self->{DestCharset} ) {
+        $Self->{EncodeObject}->EncodeInput( \$Text );
+        return $Text;
+    }
+
+    # convert from directory charset ($Self->{DestCharset}) to input charset ($Charset)
+    return $Self->{EncodeObject}->Convert(
+        Text => $Text,
+        From => $Self->{DestCharset},
+        To   => $Charset,
+    );
+}
 
 sub _IsMemberOf($$$) {
    my ($ldap, $objectDN, $groupDN) = @_;
