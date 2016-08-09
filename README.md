@@ -1,3 +1,10 @@
+Deprecated
+==========
+
+As a replacement use the default LDAP module in combination with [LDAP_MATCHING_RULE_IN_CHAIN](https://msdn.microsoft.com/en-us/library/aa746475(v=vs.85).aspx).
+
+
+
 ConnectAD
 =========
 
